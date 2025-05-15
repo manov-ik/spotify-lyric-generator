@@ -19,6 +19,7 @@
     </form>
 
     {% if lyrics %}
+    <p>Now playing "{{ song_name }}" by {{ artist_name }}</p>
     <h2>Lyrics:</h2>
     <pre>{{ lyrics }}</pre>
     {% endif %}
