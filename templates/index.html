@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Welcome to Lyrics App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body>
+    <h1>Welcome to the Lyrics Finder</h1>
+    <p>Login with Spotify to get started.</p>
+    <a href="/login">
+      <button>Login with Spotify</button>
+    </a>
+
+    <div class="fotter">
+      <p>
+        Developed by
+        <a href="https://mano-link-repository.netlify.app/" target="_blank"
+          >Mano</a
+        >
+      </p>
+      <p>
+        Lyrics by
+        <a href="https://www.tamil2lyrics.com/" target="_blank">tamil2lyrics</a>
+      </p>
+    </div>
+  </body>
+</html>
