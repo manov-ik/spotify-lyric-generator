@@ -25,21 +25,20 @@ def index():
 
 @app.route('/login')
 def login():
-    params={
+    params = {
         'client_id': CLIENT_ID,
-        'response_type':'code',
+        'response_type': 'code',
         'redirect_uri': REDIRECT_URI,
         'scope': SCOPE
     }
     auth_url = f"{AUTH_URL}?{urllib.parse.urlencode(params)}"
-    
     return redirect(auth_url)
 
 @app.route('/callback')
 def callback():
     if 'error' in request.args:
         return f"Error: {request.args['error']}"
-    
+
     if 'code' in request.args:
         req_body = {
             'code': request.args['code'],
@@ -48,14 +47,21 @@ def callback():
             'client_id': CLIENT_ID,
             'client_secret': CLIENT_SECRET
         }
-    response = requests.post(TOKEN_URL, data=req_body)
-    token_info = response.json()
+
+        response = requests.post(TOKEN_URL, data=req_body)
+
+        if response.status_code != 200:
+            return f"Error exchanging code: {response.json()}"
+
+        token_info = response.json()
+
+        session['access_token'] = token_info['access_token']
+        session['refresh_token'] = token_info['refresh_token']
+        session['expires_at'] = datetime.now().timestamp() + token_info['expires_in']
+
+        return redirect('/home')
     
-    session['access_token'] = token_info['access_token']
-    session['refresh_token'] = token_info['refresh_token']
-    session['expires_at'] = datetime.now().timestamp() + token_info['expires_in']
-    
-    return redirect('/home')
+    return "No code received, something went wrong."
 
 @app.route('/home')
 def home():
