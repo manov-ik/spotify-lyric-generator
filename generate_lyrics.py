@@ -55,7 +55,7 @@ def generate_lyric_eng(artist_name,song_name):
             continue
         if div.find('script') or div.find('img'):
             continue
-
+        text=""
         # Heuristic: block with many <br/> and long enough text is likely lyrics
         if str(div).count("<br") > 5 and len(div.get_text(strip=True)) > 100:
             # Replace <br/> tags with newlines
