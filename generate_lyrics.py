@@ -1,6 +1,7 @@
 import requests
 import re
 import urllib.parse
+from bs4 import Tag
 from bs4 import BeautifulSoup
 
 def format_lyrics(t):
@@ -12,8 +13,8 @@ def format_lyrics(t):
     formatted_lyrics = re.sub(r'(?<!^)(?=[A-Z])', '\n', lyrics_start)
     return formatted_lyrics
 
-def get_link(query,max_results=3):
-    query = "tamil2lyrics lyrics "+query
+def get_link(song_name,artist_name,max_results=3,domian="tamil2lyrics"):
+    query = domian +" lyrics "+ song_name +" by "+artist_name
     headers = {'User-Agent': 'Mozilla/5.0'}
     query_encoded = urllib.parse.quote_plus(query)
     url = f"https://html.duckduckgo.com/html/?q={query_encoded}"
@@ -32,31 +33,46 @@ def get_link(query,max_results=3):
     query_params = urllib.parse.parse_qs(parsed.query)
 
     real_url = query_params.get('uddg', [None])[0]
+    print(real_url)
     return real_url
 
 
 def generate_lyric_eng(artist_name,song_name):
-    try:
-        song_name = re.sub('[\W_]+', '', song_name).lower()
-        artist_name = re.sub('[\W_]+', '', artist_name).lower()
-        url = "https://www.azlyrics.com/lyrics/{aname}/{sname}.html".format(aname=artist_name, sname=song_name)
-        res = requests.get(url)
-        soup = BeautifulSoup(res.content, 'lxml')
-        divs = soup.find_all("div", {"class": ""})
-        try:
-            lyrics = divs[1].text
-            lyrics = lyrics[2: -1]
-            return {"lyrics": lyrics}
-        except Exception as e:
-            print(e)
-            return {"Error": "Not found"}
-        
-    except Exception as e:
-        print(e)
-        return {"Error": e}
+    url = get_link(song_name=song_name,artist_name=artist_name,domian="azlyrics")
+    # print(url)
+    res = requests.get(url)
+    soup = BeautifulSoup(res.content, 'lxml')
+    divs = soup.find_all("div", {"class": ""})
+    # print(divs)
+    for div in divs:
+        if not isinstance(div, Tag) or div.name != 'div':
+            continue
 
-def generate_lyrics(song_name):
-    url = get_link(query=song_name)
+        # Skip ads, scripts, and images
+        if div.get('id', '').startswith('freestar'):
+            continue
+        if div.has_attr('data-freestar-ad'):
+            continue
+        if div.find('script') or div.find('img'):
+            continue
+
+        # Heuristic: block with many <br/> and long enough text is likely lyrics
+        if str(div).count("<br") > 5 and len(div.get_text(strip=True)) > 100:
+            # Replace <br/> tags with newlines
+            for br in div.find_all("br"):
+                br.replace_with("\n")
+            text = div.get_text(strip=True)
+            
+            text = re.sub(r'(?<!\n)(?<!^)(?=[A-Z])', '\n', text)
+            # print(text)
+    if text:
+        lyrics=text
+    else:
+        lyrics = "Lyrics section not found on the lyrics page."
+    return lyrics
+
+def generate_lyrics(song_name,artist_name):
+    url = get_link(song_name=song_name,artist_name=artist_name)
     response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
     soup = BeautifulSoup(response.text, 'html.parser')
     content_div = soup.find('div', id='English')  #Change soup based on actual website structure
@@ -64,5 +80,6 @@ def generate_lyrics(song_name):
         lyrics_text = content_div.get_text(separator="\n", strip=True)
         lyrics = format_lyrics(lyrics_text)
     else:
-        lyrics = "Lyrics section not found on the lyrics page."
+        lyrics=generate_lyric_eng(song_name=song_name,artist_name=artist_name)
+        # lyrics = "Lyrics section not found on the lyrics page."
     return lyrics

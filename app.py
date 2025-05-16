@@ -98,7 +98,7 @@ def get_lyrics():
     
     headers = {'Authorization': f'Bearer {access_token}'}
     spotify_response = requests.get(f"{BASE_URL}me/player/currently-playing", headers=headers)
-    print(spotify_response.status_code)
+    # print(spotify_response.status_code)
     if spotify_response.status_code == 204:
         lyrics="No song is currently playing."
         return render_template("home.html", lyrics=lyrics)
@@ -114,7 +114,7 @@ def get_lyrics():
     song_name = data['item']['name']
     artist_name = data['item']['artists'][0]['name']
     try:
-        lyrics = generate_lyrics(song_name)
+        lyrics = generate_lyrics(song_name,artist_name)
         return render_template("home.html", lyrics=lyrics , song_name=song_name ,artist_name=artist_name)
     except Exception as e:
         return render_template("home.html", lyrics=f"Error generating lyrics: {str(e)}", song_name=song_name ,artist_name=artist_name)
