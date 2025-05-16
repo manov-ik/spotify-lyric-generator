@@ -18,8 +18,11 @@
       <button type="submit">Get Lyrics</button>
     </form>
 
-    {% if lyrics %}
+    {% if lyrics %} {% if song_name %}
     <p>Now playing "{{ song_name }}" by {{ artist_name }}</p>
+    {% endif %} {% if not song_name %}
+    <p>Play a song in spotify to get lyrics</p>
+    {% endif %}
     <h2>Lyrics:</h2>
     <pre>{{ lyrics }}</pre>
     {% endif %}
