@@ -38,11 +38,20 @@ def get_link(song_name,artist_name,max_results=3,domian="tamil2lyrics"):
 
 
 def generate_lyric_eng(artist_name, song_name):
+    # Get the lyrics page URL
     url = get_link(song_name=song_name, artist_name=artist_name, domain="azlyrics")
-    
-    res = requests.get(url)
+
+    try:
+        # Fetch the content from the URL
+        res = requests.get(url)
+        res.raise_for_status()  # Raise an error for bad responses
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching URL: {e}")
+        return "Lyrics section not found on the lyrics page."
+
+    # Parse the page content
     soup = BeautifulSoup(res.content, 'lxml')
-    
+
     # Look for div with specific class for lyrics
     divs = soup.find_all("div", class_="col-xs-12 col-lg-8 text-center")  # Updated class
 
@@ -62,14 +71,15 @@ def generate_lyric_eng(artist_name, song_name):
             # Replace <br> tags with newlines
             for br in div.find_all("br"):
                 br.replace_with("\n")
-            text = div.get_text(strip=True)
+            text = div.get_text(separator='\n', strip=True)
 
             # Optional: Regex for formatting newlines between uppercase letters
             text = re.sub(r'(?<!\n)(?<!^)(?=[A-Z])', '\n', text)
-            
+
             lyrics = text  # Set the found lyrics
 
     return lyrics
+
 
 
 def generate_lyrics(song_name,artist_name):
