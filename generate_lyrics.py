@@ -13,8 +13,8 @@ def format_lyrics(t):
     formatted_lyrics = re.sub(r'(?<!^)(?=[A-Z])', '\n', lyrics_start)
     return formatted_lyrics
 
-def get_link(song_name,artist_name,max_results=3,domian="tamil2lyrics"):
-    query = domian +" lyrics "+ song_name +" by "+artist_name
+def get_link(song_name,artist_name,max_results=3,domain="tamil2lyrics"):
+    query = domain +" lyrics "+ song_name +" by "+artist_name
     headers = {'User-Agent': 'Mozilla/5.0'}
     query_encoded = urllib.parse.quote_plus(query)
     url = f"https://html.duckduckgo.com/html/?q={query_encoded}"
@@ -37,17 +37,27 @@ def get_link(song_name,artist_name,max_results=3,domian="tamil2lyrics"):
     return real_url
 
 
-def generate_lyric_eng(artist_name,song_name):
-    url = get_link(song_name=song_name,artist_name=artist_name,domian="azlyrics")
-    # print(url)
-    res = requests.get(url)
-    soup = BeautifulSoup(res.content, 'lxml')
-    divs = soup.find_all("div", {"class": ""})
-    # print(divs)
-    for div in divs:
-        if not isinstance(div, Tag) or div.name != 'div':
-            continue
+def generate_lyric_eng(artist_name, song_name):
+    # Get the lyrics page URL
+    url = get_link(song_name=song_name, artist_name=artist_name, domain="azlyrics")
 
+    try:
+        # Fetch the content from the URL
+        res = requests.get(url)
+        res.raise_for_status()  # Raise an error for bad responses
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching URL: {e}")
+        return "Lyrics section not found on the lyrics page."
+
+    # Parse the page content
+    soup = BeautifulSoup(res.content, 'lxml')
+
+    # Look for div with specific class for lyrics
+    divs = soup.find_all("div", class_="col-xs-12 col-lg-8 text-center")  # Updated class
+
+    lyrics = "Lyrics section not found on the lyrics page."  # Default if no lyrics found
+
+    for div in divs:
         # Skip ads, scripts, and images
         if div.get('id', '').startswith('freestar'):
             continue
@@ -55,20 +65,19 @@ def generate_lyric_eng(artist_name,song_name):
             continue
         if div.find('script') or div.find('img'):
             continue
-        text=""
-        # Heuristic: block with many <br/> and long enough text is likely lyrics
+
+        # Heuristic: Block with many <br> and long enough text
         if str(div).count("<br") > 5 and len(div.get_text(strip=True)) > 100:
-            # Replace <br/> tags with newlines
+            # Replace <br> tags with newlines
             for br in div.find_all("br"):
                 br.replace_with("\n")
-            text = div.get_text(strip=True)
-            
+            text = div.get_text(separator='\n', strip=True)
+
+            # Optional: Regex for formatting newlines between uppercase letters
             text = re.sub(r'(?<!\n)(?<!^)(?=[A-Z])', '\n', text)
-            # print(text)
-    if text:
-        lyrics=text
-    else:
-        lyrics = "Lyrics section not found on the lyrics page."
+
+            lyrics = text  # Set the found lyrics
+
     return lyrics
 
 def generate_lyrics(song_name,artist_name):
