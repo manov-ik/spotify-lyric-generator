@@ -91,6 +91,6 @@ def generate_lyrics(song_name,artist_name):
         lyrics_text = content_div.get_text(separator="\n", strip=True)
         lyrics = format_lyrics(lyrics_text)
     else:
-        lyrics=generate_lyric_eng(song_name=song_name,artist_name=artist_name)
-        # lyrics = "Lyrics section not found on the lyrics page."
+        # lyrics=generate_lyric_eng(song_name=song_name,artist_name=artist_name)
+        lyrics = "Lyrics section not found on the lyrics page."
     return lyrics
