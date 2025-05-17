@@ -33,7 +33,7 @@ def get_link(song_name,artist_name,max_results=3,domain="tamil2lyrics"):
     query_params = urllib.parse.parse_qs(parsed.query)
 
     real_url = query_params.get('uddg', [None])[0]
-    print(real_url)
+    #print(real_url)
     return real_url
 
 
@@ -79,6 +79,8 @@ def generate_lyric_eng(artist_name, song_name):
             lyrics = text  # Set the found lyrics
 
     return lyrics
+
+
 
 def generate_lyrics(song_name,artist_name):
     url = get_link(song_name=song_name,artist_name=artist_name)
