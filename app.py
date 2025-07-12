@@ -3,7 +3,7 @@ import requests
 import os
 import urllib.parse
 from datetime import datetime
-from generate_lyrics import generate_lyrics
+from generate_lyrics import get_lyric ,init_db
 from dotenv import load_dotenv
 
 load_dotenv()  
@@ -18,6 +18,8 @@ AUTH_URL = 'https://accounts.spotify.com/authorize'
 TOKEN_URL = 'https://accounts.spotify.com/api/token'
 BASE_URL = 'https://api.spotify.com/v1/'
 SCOPE = 'user-read-playback-state user-read-currently-playing'
+
+init_db()
 
 @app.route("/")
 def index():
@@ -109,12 +111,14 @@ def get_lyrics():
     data = spotify_response.json()
     # print(data)
     if not data or 'item' not in data or data['item'] is None:
-        return "No song is currently playing.", 400
+        return render_template("home.html",lyrics="No song is currently playing.", song_name="400",artist_name="400")
 
     song_name = data['item']['name']
     artist_name = data['item']['artists'][0]['name']
+    track_url = data['item']['external_urls']['spotify']
+    track_id = data['item']['id']
     try:
-        lyrics = generate_lyrics(song_name,artist_name)
+        lyrics = get_lyric(song_name,artist_name,track_url,track_id)
         return render_template("home.html", lyrics=lyrics , song_name=song_name ,artist_name=artist_name)
     except Exception as e:
         return render_template("home.html", lyrics=f"Error generating lyrics: {str(e)}", song_name=song_name ,artist_name=artist_name)

@@ -3,94 +3,119 @@ import re
 import urllib.parse
 from bs4 import Tag
 from bs4 import BeautifulSoup
+from sqlmodel import SQLModel, Session, create_engine, select
+from models import LyricsCreate, Lyrics
+import os
+from dotenv import load_dotenv
 
-def format_lyrics(t):
-    # print(t)
-    match = re.search(r'(Male :|Female :|Chorus :)', t)
-    if not match:
-        return "Unable to parse lyrics structure."
-    lyrics_start = t[match.start():]
-    formatted_lyrics = re.sub(r'(?<!^)(?=[A-Z])', '\n', lyrics_start)
-    return formatted_lyrics
 
-def get_link(song_name,artist_name,max_results=3,domain="tamil2lyrics"):
-    query = domain +" lyrics "+ song_name +" by "+artist_name
+load_dotenv()
+DATABASE_URL = os.getenv('DATABASE_URL')
+engine = create_engine(DATABASE_URL, echo=False)
+def init_db():
+    SQLModel.metadata.create_all(engine)
+
+def get_link_tam(song_name,artist_name,max_results=3):
+    query = "tamil2lyrics" + " lyrics " + song_name + " by " + artist_name
     headers = {'User-Agent': 'Mozilla/5.0'}
     query_encoded = urllib.parse.quote_plus(query)
     url = f"https://html.duckduckgo.com/html/?q={query_encoded}"
-
+    
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, "html.parser")
 
     results = []
     for result in soup.find_all('a', {'class': 'result__a'}, limit=max_results):
-        title = result.get_text()
-        link = result.get('href')
-        results.append({'title': title, 'link': link})
-
-    raw_link = results[0]["link"]
+        results.append(result.get('href'))
+        
+    raw_link = results[0]
     parsed = urllib.parse.urlparse("https:" + raw_link)
-    query_params = urllib.parse.parse_qs(parsed.query)
-
+    query_params = urllib.parse.parse_qs(parsed.query)  
     real_url = query_params.get('uddg', [None])[0]
-    #print(real_url)
+    
     return real_url
-
-
-def generate_lyric_eng(artist_name, song_name):
-    # Get the lyrics page URL
-    url = get_link(song_name=song_name, artist_name=artist_name, domain="azlyrics")
-
-    try:
-        # Fetch the content from the URL
-        res = requests.get(url)
-        res.raise_for_status()  # Raise an error for bad responses
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching URL: {e}")
-        return "Lyrics section not found on the lyrics page."
-
-    # Parse the page content
-    soup = BeautifulSoup(res.content, 'lxml')
-
-    # Look for div with specific class for lyrics
-    divs = soup.find_all("div", class_="col-xs-12 col-lg-8 text-center")  # Updated class
-
-    lyrics = "Lyrics section not found on the lyrics page."  # Default if no lyrics found
-
-    for div in divs:
-        # Skip ads, scripts, and images
-        if div.get('id', '').startswith('freestar'):
-            continue
-        if div.has_attr('data-freestar-ad'):
-            continue
-        if div.find('script') or div.find('img'):
-            continue
-
-        # Heuristic: Block with many <br> and long enough text
-        if str(div).count("<br") > 5 and len(div.get_text(strip=True)) > 100:
-            # Replace <br> tags with newlines
-            for br in div.find_all("br"):
-                br.replace_with("\n")
-            text = div.get_text(separator='\n', strip=True)
-
-            # Optional: Regex for formatting newlines between uppercase letters
-            text = re.sub(r'(?<!\n)(?<!^)(?=[A-Z])', '\n', text)
-
-            lyrics = text  # Set the found lyrics
-
-    return lyrics
-
-
-
-def generate_lyrics(song_name,artist_name):
-    url = get_link(song_name=song_name,artist_name=artist_name)
+    
+    
+def get_lyric_tam(song_name,artist_name,spotifyTrackId,spotifyUrl):
+    url = get_link_tam(song_name=song_name,artist_name=artist_name)
     response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
     soup = BeautifulSoup(response.text, 'html.parser')
-    content_div = soup.find('div', id='English')  #Change soup based on actual website structure
+    content_div = soup.find('div', id='English')
+    
     if content_div:
         lyrics_text = content_div.get_text(separator="\n", strip=True)
-        lyrics = format_lyrics(lyrics_text)
+        match = re.search(r'(Male :|Female :|Chorus :)', lyrics_text)
+        if not match:
+            return "Unable to parse lyrics structure."
+        lyrics_start = lyrics_text[match.start():]
+        formatted_lyrics = re.sub(r'(?<!^)(?=[A-Z])', '\n', lyrics_start)
+        #print(formatted_lyrics)
+        lyrics = formatted_lyrics
+        lyrics_data = LyricsCreate(
+            artistName=artist_name,
+            songTitle=song_name,
+            spotifyTrackId=spotifyTrackId,
+            spotifyUrl=spotifyUrl,
+            lyrics=lyrics,
+            lyricGotFromUrl=url
+        )
+        new_lyrics = Lyrics(**lyrics_data.dict())
+        with Session(engine) as session:
+            session.add(new_lyrics)
+            session.commit()
+            session.refresh(new_lyrics)
     else:
-        # lyrics=generate_lyric_eng(song_name=song_name,artist_name=artist_name)
-        lyrics = "Lyrics section not found on the lyrics page."
+        lyrics = "Lyrics not found."
     return lyrics
+
+def get_lyric_eng(artist_name, song_name,spotifyUrl,spotifyTrackId):
+    baseUrl = "https://api.lyrics.ovh/v1/"
+    url = baseUrl + artist_name + "/" + song_name
+    response = requests.get(url)
+    
+    data = response.json()
+    if data["lyrics"]:
+        lyrics = data["lyrics"]
+        lyrics_data = LyricsCreate(
+            artistName=artist_name,
+            songTitle=song_name,
+            spotifyTrackId=spotifyTrackId,
+            spotifyUrl=spotifyUrl,
+            lyrics=lyrics,
+            lyricGotFromUrl=url
+        )
+        new_lyrics = Lyrics(**lyrics_data.dict())
+        with Session(engine) as session:
+            session.add(new_lyrics)
+            session.commit()
+            session.refresh(new_lyrics)
+    else:
+        lyrics = "Lyrics not found."
+    return lyrics
+
+def get_lyric(song_name, artist_name, spotifyUrl, spotifyTrackId):
+    
+    with Session(engine) as session:
+        statement = select(Lyrics).where(Lyrics.spotifyTrackId == spotifyTrackId)
+        result = session.exec(statement).first()
+        if result:
+            return result.lyrics
+
+    lyrics = get_lyric_tam(
+        song_name=song_name,
+        artist_name=artist_name,
+        spotifyUrl=spotifyUrl,
+        spotifyTrackId=spotifyTrackId
+    )
+    
+    if lyrics == "Lyrics not found.":
+        lyrics = get_lyric_eng(
+            song_name=song_name,
+            artist_name=artist_name,
+            spotifyUrl=spotifyUrl,
+            spotifyTrackId=spotifyTrackId
+        )
+
+    return lyrics
+
+
