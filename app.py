@@ -3,7 +3,7 @@ import requests
 import os
 import urllib.parse
 from datetime import datetime
-from generate_lyrics import get_lyric ,init_db
+from generate_lyrics import get_lyric
 from dotenv import load_dotenv
 
 load_dotenv()  

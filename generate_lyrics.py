@@ -25,7 +25,8 @@ def get_link_tam(song_name,artist_name,max_results=3):
     results = []
     for result in soup.find_all('a', {'class': 'result__a'}, limit=max_results):
         results.append(result.get('href'))
-        
+    if not results:
+        return "Lyrics not found."
     raw_link = results[0]
     parsed = urllib.parse.urlparse("https:" + raw_link)
     query_params = urllib.parse.parse_qs(parsed.query)  
@@ -73,7 +74,7 @@ def get_lyric_eng(artist_name, song_name,spotifyUrl,spotifyTrackId):
     
     data = response.json()
     if data["lyrics"]:
-        lyrics = data["lyrics"]
+        lyrics = data.get("lyrics")
         lyrics_data = LyricsCreate(
             artistName=artist_name,
             songTitle=song_name,
