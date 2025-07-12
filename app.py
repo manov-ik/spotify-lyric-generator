@@ -120,4 +120,6 @@ def get_lyrics():
         return render_template("home.html", lyrics=lyrics , song_name=song_name ,artist_name=artist_name)
     except Exception as e:
         return render_template("home.html", lyrics=f"Error generating lyrics: {str(e)}", song_name=song_name ,artist_name=artist_name)
-        
+    
+# if __name__ == "__main__":
+#     app.run(debug=True)
