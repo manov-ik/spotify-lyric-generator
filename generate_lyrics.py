@@ -12,8 +12,6 @@ from dotenv import load_dotenv
 load_dotenv()
 DATABASE_URL = os.getenv('DATABASE_URL')
 engine = create_engine(DATABASE_URL, echo=False)
-def init_db():
-    SQLModel.metadata.create_all(engine)
 
 def get_link_tam(song_name,artist_name,max_results=3):
     query = "tamil2lyrics" + " lyrics " + song_name + " by " + artist_name

@@ -19,8 +19,6 @@ TOKEN_URL = 'https://accounts.spotify.com/api/token'
 BASE_URL = 'https://api.spotify.com/v1/'
 SCOPE = 'user-read-playback-state user-read-currently-playing'
 
-init_db()
-
 @app.route("/")
 def index():
     return render_template('index.html')
