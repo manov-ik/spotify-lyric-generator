@@ -35,7 +35,7 @@ def get_link_tam(song_name,artist_name,max_results=3):
     return real_url
     
     
-def get_lyric_tam(song_name,artist_name,spotifyTrackId,spotifyUrl):
+def get_lyric_tam(song_name,artist_name,spotifyTrackId):
     url = get_link_tam(song_name=song_name,artist_name=artist_name)
     response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -54,7 +54,6 @@ def get_lyric_tam(song_name,artist_name,spotifyTrackId,spotifyUrl):
             artistName=artist_name,
             songTitle=song_name,
             spotifyTrackId=spotifyTrackId,
-            spotifyUrl=spotifyUrl,
             lyrics=lyrics,
             lyricGotFromUrl=url
         )
@@ -67,7 +66,7 @@ def get_lyric_tam(song_name,artist_name,spotifyTrackId,spotifyUrl):
         lyrics = "Lyrics not found."
     return lyrics
 
-def get_lyric_eng(artist_name, song_name,spotifyUrl,spotifyTrackId):
+def get_lyric_eng(artist_name, song_name,spotifyTrackId):
     baseUrl = "https://api.lyrics.ovh/v1/"
     url = baseUrl + artist_name + "/" + song_name
     response = requests.get(url)
@@ -79,7 +78,6 @@ def get_lyric_eng(artist_name, song_name,spotifyUrl,spotifyTrackId):
             artistName=artist_name,
             songTitle=song_name,
             spotifyTrackId=spotifyTrackId,
-            spotifyUrl=spotifyUrl,
             lyrics=lyrics,
             lyricGotFromUrl=url
         )
@@ -92,7 +90,7 @@ def get_lyric_eng(artist_name, song_name,spotifyUrl,spotifyTrackId):
         lyrics = "Lyrics not found."
     return lyrics
 
-def get_lyric(song_name, artist_name, spotifyUrl, spotifyTrackId):
+def get_lyric(song_name, artist_name, spotifyTrackId):
     
     with Session(engine) as session:
         statement = select(Lyrics).where(Lyrics.spotifyTrackId == spotifyTrackId)
@@ -103,7 +101,6 @@ def get_lyric(song_name, artist_name, spotifyUrl, spotifyTrackId):
     lyrics = get_lyric_tam(
         song_name=song_name,
         artist_name=artist_name,
-        spotifyUrl=spotifyUrl,
         spotifyTrackId=spotifyTrackId
     )
     
@@ -111,7 +108,6 @@ def get_lyric(song_name, artist_name, spotifyUrl, spotifyTrackId):
         lyrics = get_lyric_eng(
             song_name=song_name,
             artist_name=artist_name,
-            spotifyUrl=spotifyUrl,
             spotifyTrackId=spotifyTrackId
         )
 
