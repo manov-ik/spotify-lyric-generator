@@ -113,13 +113,13 @@ def get_lyrics():
 
     song_name = data['item']['name']
     artist_name = data['item']['artists'][0]['name']
-    track_url = data['item']['external_urls']['spotify']
+    # track_url = data['item']['external_urls']['spotify']
     track_id = data['item']['id']
     try:
-        lyrics = get_lyric(song_name,artist_name,track_url,track_id)
+        lyrics = get_lyric(song_name,artist_name,track_id)
         return render_template("home.html", lyrics=lyrics , song_name=song_name ,artist_name=artist_name)
     except Exception as e:
         return render_template("home.html", lyrics=f"Error generating lyrics: {str(e)}", song_name=song_name ,artist_name=artist_name)
     
-# if __name__ == "__main__":
-#     app.run(debug=True)
+if __name__ == "__main__":
+    app.run(debug=True)

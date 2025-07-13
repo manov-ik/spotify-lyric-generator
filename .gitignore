@@ -1,3 +1,5 @@
 .env
 __pycache__
 database.db
+compress_old.py
+lyrics (1).json
